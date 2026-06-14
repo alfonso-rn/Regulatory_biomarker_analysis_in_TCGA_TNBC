@@ -10,10 +10,9 @@
 # interpreted as higher expression in TNBC compared with non-TNBC.
 #
 # The resulting DEGs are summarized by regulation direction and gene type.
-# In addition, an unfiltered DEA is performed to retain all tested features
-# for visualization in the volcano plot.
 
 library(TCGAbiolinks)
+library(dplyr)
 library(ggplot2)
 
 dataFilt <- readRDS("data/processed/dataFilt.rds")
@@ -32,7 +31,7 @@ dataDEA <- TCGAanalyze_DEA(
   method = "glmLRT"
 )
 
- cat("Total DEGs:", nrow(dataDEA), "\n",
+cat("Total DEGs:", nrow(dataDEA), "\n",
     "Upregulated DEGs in TNBC:", sum(dataDEA$logFC > 0), "\n",
     "Downregulated DEGs in TNBC:", sum(dataDEA$logFC < 0))
 
@@ -64,24 +63,27 @@ saveRDS(dataDEGsLevel, "data/processed/dataDEGsLevel.rds")
 
 # 4.3. Volcano plot representation ----
 
-globalDEA <- TCGAanalyze_DEA(
-  mat1 = dataFilt[, samplesNonTNBC],
-  mat2 = dataFilt[, samplesTNBC],
-  Cond1type = "Non_TNBC",
-  Cond2type = "TNBC",
-  method = "glmLRT"
-)
+# Keep only one row per gene_name
+dataDEA <- dataDEA[order(dataDEA$gene_name, -abs(dataDEA$logFC), dataDEA$FDR),]
+dataDEA <- dataDEA[!duplicated(dataDEA$gene_name), ]
+
+# Select top genes with |logFC| > 6
+top_genes <- dataDEA$gene_name[abs(dataDEA$logFC) > 6]
+cat("Genes with |logFC| > 6:", length(top_genes))
+
+options(ggrepel.max.overlaps = Inf)
 
 TCGAVisualize_volcano(
-  x = globalDEA$logFC,
-  y = globalDEA$FDR,
+  x = dataDEA$logFC,
+  y = dataDEA$FDR,
   filename = "results/figures/volcano_TNBC_vs_NonTNBC.png",
   x.cut = 1,
   y.cut = 0.01,
-  names = globalDEA$gene_name,
-  show.names = "significant",
+  names = dataDEA$gene_name,
+  highlight = top_genes,
+  show.names = "highlighted",
   color = c("grey", "red", "blue"),
-  names.size = 2,
+  names.size = 1.5,
   xlab = "Gene expression fold change (Log2)",
   legend = "State",
   title = "Differential expression analysis: TNBC vs Non-TNBC",
@@ -112,23 +114,53 @@ barplot_gene_type <- ggplot(
     y = "Percentage of DEGs",
     fill = "Gene type"
   ) +
-  theme_classic()
+  theme_classic() + theme(legend.position = "bottom")
 
 ggsave(filename = "results/figures/barplot_DEGs_type.png",
        plot = barplot_gene_type, width = 10, height = 6, dpi = 300 )
 
 # 4.5. Gene type distribution summary table ----
 
-gene_type_counts <- table(dataDEA$gene_type, dataDEA$expression_status)
+smallRNA <- c("miRNA", "misc_RNA", "snRNA", "snoRNA", "scaRNA", "rRNA", "Mt_tRNA")
 
-gene_type_percent <- round(prop.table(gene_type_counts, margin = 2) * 100, 2)
+pseudogenes <- c("processed_pseudogene", "unprocessed_pseudogene", "unitary_pseudogene", "polymorphic_pseudogene",
+  "transcribed_processed_pseudogene", "transcribed_unprocessed_pseudogene", "transcribed_unitary_pseudogene",
+  "rRNA_pseudogene", "IG_V_pseudogene", "IG_C_pseudogene", "IG_J_pseudogene", "TR_V_pseudogene")
 
-gene_type_percent <- data.frame(
-  gene_type = rownames(gene_type_percent),
-  Down_regulated_TNBC = gene_type_percent[, "Down regulated in TNBC"],
-  Up_regulated_TNBC = gene_type_percent[, "Up regulated in TNBC"],
-  row.names = NULL
+immune <- c("IG_V_gene", "IG_C_gene", "IG_J_gene", "IG_D_gene", "TR_V_gene", "TR_J_gene", "TR_C_gene")
+
+gene_group_map <- c(
+  protein_coding = "Protein-coding genes",
+  lncRNA = "Long non-coding RNAs",
+  setNames(rep("Small non-coding RNAs", length(smallRNA)), smallRNA),
+  setNames(rep("Pseudogenes", length(pseudogenes)), pseudogenes),
+  setNames(rep("Immune receptor genes", length(immune)), immune),
+  TEC = "Uncertain"
 )
 
-write.csv(gene_type_percent, "results/tables/DEGs_type_distribution.csv", 
-          row.names = FALSE)
+dataDEA$gene_group <- unname(gene_group_map[dataDEA$gene_type])
+
+gene_group_summary <- dataDEA %>%
+  count(gene_group, gene_type, expression_status, name = "n") %>%
+  as.data.frame()
+
+gene_group_summary <- reshape(
+  gene_group_summary,
+  idvar = c("gene_group", "gene_type"),
+  timevar = "expression_status",
+  direction = "wide"
+)
+
+gene_group_summary[is.na(gene_group_summary)] <- 0
+
+names(gene_group_summary) <- sub("n.Down regulated in TNBC", "n downregulated",
+  names(gene_group_summary), fixed = TRUE)
+
+names(gene_group_summary) <- sub("n.Up regulated in TNBC", "n upregulated",
+  names(gene_group_summary), fixed = TRUE)
+
+gene_group_summary <- gene_group_summary[ , c("gene_group", "gene_type", "n downregulated", "n upregulated")]
+
+rownames(gene_group_summary) <- NULL
+
+write.csv(gene_group_summary, "results/table/gene_group_summary.csv")
