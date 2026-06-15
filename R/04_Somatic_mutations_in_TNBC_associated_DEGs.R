@@ -81,22 +81,24 @@ write.csv(maf_sampleTNBCvsNonTNBC_coverage,
 
 # 4.3. Visual representation of MAFs TNBC vs Non-TNBC distribution ----
 
-MAF_TNBC <- read.maf(maf_TNBC,
-                     vc_nonSyn = unique(TCGA_BRCA_mut$Variant_Classification))
+MAF_TNBC <- read.maf(maf_TNBC, vc_nonSyn = unique(TCGA_BRCA_mut$Variant_Classification))
+MAF_NonTNBC <- read.maf(maf_NonTNBC, vc_nonSyn = unique(TCGA_BRCA_mut$Variant_Classification))
 
-MAF_NonTNBC <- read.maf(maf_NonTNBC,
-                     vc_nonSyn = unique(TCGA_BRCA_mut$Variant_Classification))
+pdf(file = "results/figures/MAFoncoplots.pdf", width = 12, height = 8)
 
-pdf(file = "results/figures/MAF_TNBC_vs_NonTNBC_plots.pdf", 
-    width = 12, height = 8)
+oncoplot(maf = MAF_TNBC, 
+         top = 20,
+         titleText = "TNBC",
+         draw_titv = TRUE,
+         logColBar = TRUE
+         )
 
-oncoplot(MAF_TNBC, top = 20, titleText = "TNBC")
-
-oncoplot(MAF_NonTNBC, top = 20, titleText = "Non-TNBC")
-
-plotTiTv(titv(MAF_TNBC, plot = FALSE, useSyn = TRUE))
-
-plotTiTv(titv(MAF_NonTNBC, plot = FALSE, useSyn = TRUE))
+oncoplot(maf = MAF_NonTNBC,
+         top = 20,
+         titleText = "TNBC",
+         draw_titv = TRUE,
+         logColBar = TRUE
+         )
 
 dev.off()
 
@@ -150,3 +152,11 @@ maf_exonic_TNBC$expression_status <- dataDEGsLevel$expression_status[
   match(maf_exonic_TNBC$Gene, dataDEGsLevel$mRNA)]
 
 saveRDS(maf_exonic_TNBC, "data/processed/maf_exonic_TNBC.rds")
+
+# 4.5. Selection of DEGs without mutations
+
+nonMutDEGs <- dataDEGsLevel[!dataDEGsLevel$mRNA %in% unique(maf_TNBC_DEGs$Gene), ]
+
+cat("DEGs without any mutations:", nrow(nonMutDEGs))
+
+saveRDS(nonMutDEGs, "data/processed/nonMutDEGs.rds")
