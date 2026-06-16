@@ -70,6 +70,7 @@ dataDEA <- dataDEA[!duplicated(dataDEA$gene_name), ]
 # Select top genes with |logFC| > 6
 top_genes <- dataDEA$gene_name[abs(dataDEA$logFC) > 6]
 cat("Genes with |logFC| > 6:", length(top_genes))
+print(top_genes)
 
 options(ggrepel.max.overlaps = Inf)
 
@@ -163,4 +164,4 @@ gene_group_summary <- gene_group_summary[ , c("gene_group", "gene_type", "n down
 
 rownames(gene_group_summary) <- NULL
 
-write.csv(gene_group_summary, "results/table/gene_group_summary.csv")
+write.csv(gene_group_summary, "results/tables/gene_group_summary.csv")
