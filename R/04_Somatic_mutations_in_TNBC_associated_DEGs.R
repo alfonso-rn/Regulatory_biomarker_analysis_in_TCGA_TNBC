@@ -151,7 +151,7 @@ maf_non_trunc <- maf_TNBC_DEGs %>%
 
 cat("Non-truncating mutations in DEGs from TNBC patient:", nrow(maf_non_trunc))
 
-# 4.5. Categorizing exonic vs intronic mutations in TNBC-associated DEGs ----
+# 4.6. Categorizing exonic vs intronic mutations in TNBC-associated DEGs ----
 
 # Intronic mutations
 maf_intronic_TNBC <- maf_non_trunc[!is.na(maf_non_trunc$INTRON), ]
