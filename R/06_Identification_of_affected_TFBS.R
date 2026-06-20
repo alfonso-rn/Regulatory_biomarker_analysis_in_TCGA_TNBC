@@ -8,7 +8,7 @@
 #
 # Strong predicted TFBS effects were then overlapped with prioritized
 # self-targeting cis-regulatory modules (CRMs) to identify regulatory regions
-# where intronic mutations may alter transcription factor binding. Summary
+# where intronic mutations may alter transcription factor binding.
 
 library(dplyr)
 library(motifbreakR)
@@ -18,7 +18,7 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 maf_intronic_TNBC <- readRDS("data/processed/maf_intronic_TNBC.rds")
 selfTargetingCRMs <- readRDS("data/processed/selfTargetingCRMs.rds")
 
-# 6.2. Prediction of SNPs effects on TFBS motifs ----
+# 6.1. Prediction of SNPs effects on TFBS motifs ----
 
 # Priorization of SNPs
 variants_snv <- maf_intronic_TNBC %>%
@@ -186,23 +186,49 @@ cat("Strong TFBS predictions overlapping prioritized CRMs:", length(tfbs_crm_hit
 cat("Distinct affected TFs overlapping CRMs:", n_distinct(tfbs_crm_overlap$geneSymbol))
 cat("Distinct CRMs containing affected TFBS:", n_distinct(tfbs_crm_overlap$crm_name))
 
-# 6.4. Summary table ----
+# Summary data tables
+tfbs_crm_overlap$DEG_gene <- tfbs_crm_overlap$common_genes
+
+snp_parts <- strsplit(as.character(tfbs_crm_overlap$SNP_id), ":")
+
+tfbs_crm_overlap$SNP_type <- paste(
+  sapply(snp_parts, `[`, 3),
+  sapply(snp_parts, `[`, 4),
+  sep = ">"
+)
+
+gene_status <- unique(variants_snv[, c("gene", "expression_status")])
+
+tfbs_crm_overlap$expression_status <- gene_status$expression_status[match(
+  tfbs_crm_overlap$DEG_gene, gene_status$gene)]
+
 crm_tfbs_overlap_summary <- tfbs_crm_overlap %>%
-  group_by(crm_name) %>%
+  group_by(expression_status, DEG_gene, SNP_type) %>%
   summarise(
-    crm_chr = crm_chr[1],
-    crm_start = crm_start[1],
-    crm_end = crm_end[1],
-    TFBS_CRM_overlaps = n(),
-    affected_SNPs = n_distinct(SNP_id),
-    affected_TFs = n_distinct(geneSymbol),
-    gains_or_strengthening = sum(TFBS_effect == "gain_or_strengthening"),
-    losses_or_weakening = sum(TFBS_effect == "loss_or_weakening"),
-    TFs = paste(geneSymbol, collapse = ", "),
+    associated_CRMs = n_distinct(crm_name),
+    associated_TFBS = n(),
+    gain_effects = sum(TFBS_effect == "gain_or_strengthening", na.rm = TRUE),
+    loss_effects = sum(TFBS_effect == "loss_or_weakening", na.rm = TRUE),
+    n_TFs = n_distinct(geneSymbol),
     .groups = "drop"
   ) %>%
-  left_join(selfTargetingCRMs %>% select(crm_name, common_genes), by = "crm_name"
-  ) %>%
-  arrange(desc(TFBS_CRM_overlaps), desc(affected_TFs))
+  arrange(expression_status, desc(associated_CRMs), desc(associated_TFBS))
 
 write.csv(crm_tfbs_overlap_summary,"results/tables/crm_tfbs_overlap_summary.csv", row.names = FALSE)
+
+# TFs associated with gain/loss effects by DEG gene
+tfs_gene <- tfbs_crm_overlap %>%
+  group_by(DEG_gene) %>%
+  summarise(
+    TFs_with_binding_gain = paste(
+      sort(unique(geneSymbol[TFBS_effect == "gain_or_strengthening"])),
+      collapse = ", "
+    ),
+    TFs_with_binding_loss = paste(
+      sort(unique(geneSymbol[TFBS_effect == "loss_or_weakening"])),
+      collapse = ", "
+    ),
+    .groups = "drop"
+  )
+
+write.csv(tfs_gene, "results/tables/tfs_gene.csv", row.names = FALSE)
