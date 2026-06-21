@@ -4,7 +4,7 @@
 # genes (DEGs) in TNBC using g:Profiler. Upregulated and downregulated genes were
 # analysed separately to identify enriched Gene Ontology terms and biological pathways.
 #
-# Enriched terms containing genes associated with prioritized self-targeting CRMs 
+# Enriched terms containing genes associated with prioritized intragenic CRMs 
 # were then identified to explore functional categories potentially linked to 
 # regulatory regions affected by intronic mutations in TNBC.
 #
