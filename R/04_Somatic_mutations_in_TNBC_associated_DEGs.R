@@ -8,7 +8,7 @@
 # based on Ensembl gene identifiers in ENSG format.
 #
 # The MAF table is then filtered to retain intronic somatic mutations located
-# in DEG-associated genes.
+# in DEGs.
 
 library(TCGAbiolinks)
 library(dplyr)
@@ -124,9 +124,9 @@ maf_TNBC_DEGs <- maf_TNBC[maf_TNBC$Gene %in% DEGs_ID, ]
 
 cat("Mutations in DEGs from TNBC patient:", nrow(maf_TNBC_DEGs))
 
+nonMutDEGs <- dataDEGsLevel[!DEGs_ID %in% maf_TNBC_DEGs$Gene, ]
 saveRDS(nonMutDEGs, "data/processed/nonMutDEGs.rds")
 
-nonMutDEGs <- dataDEGsLevel[!DEGs_ID %in% maf_TNBC_DEGs$Gene, ]
 MutDEGs <- dataDEGsLevel[DEGs_ID %in% maf_TNBC_DEGs$Gene, ]
 
 cat("DEGs from TNBC samples with any mutations:", nrow(MutDEGs), "\n",
@@ -161,7 +161,7 @@ cat("Identification of intronic somatic mutations in TNBC-associated DEGs:",
 
 # Add expression TNBC status level column from DEA
 maf_intronic_TNBC$expression_status <- dataDEGsLevel$expression_status[
-  match(maf_intronic_TNBC$Gene, dataDEGsLevel$mRNA)]
+  match(maf_intronic_TNBC$Gene, rownames(dataDEGsLevel))]
 
 saveRDS(maf_intronic_TNBC, "data/processed/maf_intronic_TNBC.rds")
 
@@ -173,6 +173,6 @@ cat("Identification of exonic somatic mutations in TNBC-associated DEGs:",
 
 # Add expression TNBC status level column from DEA
 maf_exonic_TNBC$expression_status <- dataDEGsLevel$expression_status[
-  match(maf_exonic_TNBC$Gene, dataDEGsLevel$mRNA)]
+  match(maf_exonic_TNBC$Gene, rownames(dataDEGsLevel))]
 
 saveRDS(maf_exonic_TNBC, "data/processed/maf_exonic_TNBC.rds")
