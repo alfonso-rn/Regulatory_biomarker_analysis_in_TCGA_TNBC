@@ -7,7 +7,7 @@
 # motif gains, strengthening, losses, or weakening events.
 #
 # Strong predicted TFBS effects were then overlapped with prioritized
-# self-targeting cis-regulatory modules (CRMs) to identify regulatory regions
+# intragenic cis-regulatory modules (CRMs) to identify regulatory regions
 # where intronic mutations may alter transcription factor binding.
 
 library(dplyr)
@@ -16,7 +16,7 @@ library(GenomicRanges)
 library(BSgenome.Hsapiens.UCSC.hg38)
 
 maf_intronic_TNBC <- readRDS("data/processed/maf_intronic_TNBC.rds")
-selfTargetingCRMs <- readRDS("data/processed/selfTargetingCRMs.rds")
+intragenicCRMs <- readRDS("data/processed/intragenicCRMs.rds")
 
 # 6.1. Prediction of SNPs effects on TFBS motifs ----
 
@@ -140,7 +140,7 @@ tfbs_gr <- makeGRangesFromDataFrame(
 )
 
 crm_gr <- makeGRangesFromDataFrame(
-  selfTargetingCRMs,
+  intragenicCRMs,
   seqnames.field = "chr",
   start.field = "start",
   end.field = "end",
