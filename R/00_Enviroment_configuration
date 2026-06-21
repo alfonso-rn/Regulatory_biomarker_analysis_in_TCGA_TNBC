@@ -1,0 +1,42 @@
+# 0. Environment configuration ----
+#
+# This script prepares the project environment required to run the complete
+# TCGA-BRCA TNBC regulatory biomarker analysis workflow.
+
+# 0.1. Creation of project folders ----
+
+dir.create("data")
+dir.create("data/raw")
+dir.create("data/processed")
+dir.create("results")
+dir.create("results/figures")
+dir.create("results/tables")
+
+# 0.2. Installation of packages ----
+
+# CRAN packages (If CRAN is not installed: https://cran.r-project.org)
+install.packages(c(
+  "dplyr", 
+  "ggplot2", 
+  "gprofiler2"))
+
+# BiocManager packages
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+
+BiocManager::install(c(
+  "TCGAbiolinks", 
+  "SummarizedExperiment", 
+  "maftools",
+  "GenomicRanges", 
+  "ensembldb", 
+  "EnsDb.Hsapiens.v86", 
+  "BSgenome.Hsapiens.UCSC.hg38"
+  )
+)
+
+# RBioGateway & motifBreakRpackages
+install.packages("pak")
+pak::pak("tecnomod-um/RBioGateway")
+pak::pak("Simon-Coetzee/motifBreakR")
