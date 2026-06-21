@@ -1,4 +1,4 @@
-# 5. Identification of CRMs affected by mutations in DEGs ----
+# 6. Identification of CRMs affected by mutations in DEGs ----
 #
 # Candidate cis-regulatory modules (CRMs) overlapping intronic mutations in
 # differentially expressed genes (DEGs) from TNBC samples are identified using
@@ -24,7 +24,7 @@ library(EnsDb.Hsapiens.v86)
 
 maf_intronic_TNBC <- readRDS("data/processed/maf_intronic_TNBC.rds")
 
-# 5.1. Identification of CRMs overlapping with mutation coordinates ----
+# 6.1. Identification of CRMs overlapping with mutation coordinates ----
 
 maf_intronic_TNBC$Chromosome <- sub("^chr", "chr-", maf_intronic_TNBC$Chromosome)
 
@@ -60,7 +60,7 @@ overlapCRMs <- bind_rows(overlapCRMs_list)
 
 cat("CRMs overlapping intronic mutations:", nrow(overlapCRMs))
 
-# 5.2. Selection of CRMs active in breast tissue ----
+# 6.2. Selection of CRMs active in breast tissue ----
 
 # Supplementary information of identified CRMs
 CRMs_info_list <- vector("list", nrow(overlapCRMs))
@@ -87,7 +87,7 @@ breastCRMs <- allCRMs[grepl("UBERON_0000310", allCRMs$biological_samples),]
 
 cat("CRMs active in breast tissue:", nrow(breastCRMs))
 
-# 5.3. Verification of CMRs with BRCA-associated phenotype ----
+# 6.3. Verification of CMRs with BRCA-associated phenotype ----
 
 breastCRMs$phenotype <- NA_character_
 
@@ -104,7 +104,7 @@ print(breastCRMs$phenotype)
 
 saveRDS(breastCRMs, file = "data/raw/breastCRMs.rds")
 
-# 5.4. Identification of target genes of identified CRMs ----
+# 6.4. Identification of target genes of identified CRMs ----
 
 breastCRMs$target_genes <- NA_character_
 
@@ -120,7 +120,7 @@ cat("CRMs without identified target genes:", sum(is.na(breastCRMs$target_genes))
 
 filtCRMs <- breastCRMs %>% dplyr::filter(!is.na(target_genes))
 
-# 5.5. Identification of located genes of identified CRMs ----
+# 6.5. Identification of located genes of identified CRMs ----
 
 # Ensembl chromosome format
 filtCRMs$chr <- sub("^chr-?", "", filtCRMs$chr)
@@ -161,7 +161,7 @@ for (i in seq_len(length(crm_gr))) {
 
 filtCRMs$located_gene <- located_gene
 
-# 5.6. Identification of self-targeting CRMs in mutated DEGs ----
+# 6.6. Identification of self-targeting CRMs in mutated DEGs ----
 
 filtCRMs$common_genes <- NA_character_
 
@@ -185,10 +185,13 @@ cat("CRMs located in and targeting the same mutated DEG:", nrow(selfTargetingCRM
 cat("Mutated DEGs potentially regulated by these CRMs:", 
     paste(unique(selfTargetingCRMs$common_genes), collapse = "; "))
 
+# Add expression TNBC status level column from DEA
+selfTargetingCRMs$expression_status <- dataDEA$expression_status[match(selfTargetingCRMs$common_genes, dataDEA$gene_name)]
+
 write.csv(selfTargetingCRMs, "results/tables/selfTargetingCRMs.csv", row.names = FALSE)
 saveRDS(selfTargetingCRMs, "data/processed/selfTargetingCRMs.rds")
 
-# 5.7. TFs associated with identified CRMs ----
+# 6.7. TFs associated with identified CRMs ----
 
 CRMs_tfac_list <- vector("list", nrow(selfTargetingCRMs))
 
