@@ -63,14 +63,12 @@ saveRDS(dataDEGsLevel, "data/processed/dataDEGsLevel.rds")
 
 # 4.3. Volcano plot representation ----
 
-# Keep only one row per gene_name
-dataDEA <- dataDEA[order(dataDEA$gene_name, -abs(dataDEA$logFC), dataDEA$FDR),]
-dataDEA <- dataDEA[!duplicated(dataDEA$gene_name), ]
-
 # Select top genes with |logFC| > 6
-top_genes <- dataDEA$gene_name[abs(dataDEA$logFC) > 6]
-cat("Genes with |logFC| > 6:", length(top_genes))
-print(top_genes)
+topLogFC_DEGs <- dataDEA %>%
+  filter(abs(logFC) > 6) %>%
+  arrange(desc(logFC))
+
+write.csv(topLogFC_DEGs, "results/tables/topLogFC_DEGs.csv")
 
 options(ggrepel.max.overlaps = Inf)
 
