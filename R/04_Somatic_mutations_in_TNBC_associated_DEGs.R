@@ -116,6 +116,24 @@ oncoplot(
 
 dev.off()
 
+# Extract top 20 most mutated genes from each MAF object ----
+
+top20_mutated_genes <- list(
+  TNBC = getGeneSummary(MAF_TNBC) %>%
+    as.data.frame() %>%
+    arrange(desc(MutatedSamples)) %>%
+    slice_head(n = 20) %>%
+    pull(Hugo_Symbol),
+  
+  NonTNBC = getGeneSummary(MAF_NonTNBC) %>%
+    as.data.frame() %>%
+    arrange(desc(MutatedSamples)) %>%
+    slice_head(n = 20) %>%
+    pull(Hugo_Symbol)
+)
+
+saveRDS(top20_mutated_genes, "data/processed/top20_mutated_genes.rds")
+
 # 4.4. Somatic mutations in TNBC-associated DEGs ----
 
 DEGs_ID <- rownames(dataDEGsLevel)
